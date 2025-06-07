@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>折舊計算機</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f6f9;
+      padding: 40px;
+      color: #333;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      max-width: 600px;
+      background: #fff;
+      margin: auto;
+      padding: 20px 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 16px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      margin-top: 20px;
+      width: 100%;
+      background: #007bff;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+    }
+
+    table {
+      margin-top: 25px;
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: right;
+      border-bottom: 1px solid #ccc;
+    }
+
+    th {
+      background-color: #f0f0f0;
+    }
+
+    td:first-child, th:first-child {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <h1>折舊計算機</h1>
+  <div class="container">
+    <label for="cost">設備成本</label>
+    <input type="text" id="cost" placeholder="請輸入設備成本">
+
+    <label for="residual">殘值</label>
+    <input type="text" id="residual" placeholder="請輸入殘值">
+
+    <label for="life">使用年限</label>
+    <input type="number" id="life" placeholder="請輸入使用年限">
+
+    <label for="method">折舊方法</label>
+    <select id="method">
+      <option value="straight">直線法</option>
+      <option value="ddb">倍數餘額法</option>
+    </select>
+
+    <button onclick="calculateDepreciation()">計算</button>
+
+    <table id="resultTable">
+      <thead>
+        <tr>
+          <th>年份</th>
+          <th>當年折舊</th>
+          <th>累積折舊</th>
+          <th>帳面價值</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    function parseNumber(str) {
+      return parseFloat(str.replace(/,/g, '')) || 0;
+    }
+
+    function formatWithCommas(value) {
+      let num = value.replace(/,/g, '').replace(/[^\d.]/g, '');
+      let parts = num.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      return parts.join('.');
+    }
+
+    function setupCommaFormatting(inputId) {
+      const input = document.getElementById(inputId);
+      input.addEventListener("input", () => {
+        const caret = input.selectionStart;
+        const originalLength = input.value.length;
+
+        input.value = formatWithCommas(input.value);
+
+        // 游標修正（避免亂跳）
+        const newLength = input.value.length;
+        input.setSelectionRange(
+          caret + (newLength - originalLength),
+          caret + (newLength - originalLength)
+        );
+      });
+    }
+
+    window.onload = () => {
+      setupCommaFormatting("cost");
+      setupCommaFormatting("residual");
+    };
+
+    function calculateDepreciation() {
+      const cost = parseNumber(document.getElementById("cost").value);
+      const residual = parseNumber(document.getElementById("residual").value);
+      const life = parseInt(document.getElementById("life").value);
+      const method = document.getElementById("method").value;
+
+      if (isNaN(cost) || isNaN(residual) || isNaN(life) || cost <= residual || life <= 0) {
+        alert("請輸入正確數值，且成本必須大於殘值！");
+        return;
+      }
+
+      let tbody = document.querySelector("#resultTable tbody");
+      tbody.innerHTML = "";
+
+      let bookValue = cost;
+      let accumulated = 0;
+
+      for (let year = 1; year <= life; year++) {
+        let depreciation = 0;
+
+        if (method === "straight") {
+          depreciation = (cost - residual) / life;
+        } else if (method === "ddb") {
+          let rate = 2 / life;
+          depreciation = bookValue * rate;
+          if (bookValue - depreciation < residual) {
+            depreciation = bookValue - residual;
+          }
+        }
+
+        accumulated += depreciation;
+        bookValue -= depreciation;
+
+        let row = `<tr>
+          <td>${year}</td>
+          <td>${depreciation.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+          <td>${accumulated.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+          <td>${bookValue.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        </tr>`;
+
+        tbody.innerHTML += row;
+
+        if (bookValue <= residual) break;
+      }
+    }
+  </script>
+</body>
+</html>
